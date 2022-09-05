@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SkunkLab.Modbus.Messaging
 {
@@ -9,7 +7,7 @@ namespace SkunkLab.Modbus.Messaging
     {
         public static bool[] BitArrayToBoolArray(this BitArray bits)
         {
-            List<bool> list = new List<bool>();
+            List<bool> list = new();
             for (int i = 0; i < bits.Length; i++)
                 list.Add(bits.Get(i));
 

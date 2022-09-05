@@ -1,14 +1,14 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
     [Serializable]
-    [JsonObject]
+
     public class MbapHeader
     {
         public MbapHeader()
-        {                
+        {
         }
 
         public static MbapHeader Decode(byte[] message)
@@ -16,7 +16,7 @@ namespace SkunkLab.Modbus.Messaging
             if (message.Length < 7)
                 throw new InvalidMbapHeaderException("MBAP header length less than 7 bytes.");
 
-            MbapHeader header = new MbapHeader();
+            MbapHeader header = new();
 
             int index = 0;
 
@@ -31,17 +31,17 @@ namespace SkunkLab.Modbus.Messaging
             return header;
         }
 
-        [JsonProperty("transactionId")]
+        [JsonPropertyName("transactionId")]
         public ushort TransactionId { get; set; }
 
-        [JsonProperty("protocolId")]
+        [JsonPropertyName("protocolId")]
         public ushort ProtocolId { get; set; }
 
-        [JsonProperty("unitId")]
+        [JsonPropertyName("unitId")]
         public byte UnitId { get; set; }
 
-        [JsonProperty("length")]
-        public ushort Length { get; set; }        
+        [JsonPropertyName("length")]
+        public ushort Length { get; set; }
 
         public byte[] Encode()
         {

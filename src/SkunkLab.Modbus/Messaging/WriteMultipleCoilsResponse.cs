@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
     [Serializable]
-    [JsonObject]
+
     public class WriteMultipleCoilsResponse : ModbusMessage
     {
         private const MessageType type = MessageType.WriteMultipleCoilsResponse;
@@ -18,7 +18,7 @@ namespace SkunkLab.Modbus.Messaging
 
         public static WriteMultipleCoilsResponse Create(byte slaveAddress, ushort startingAddress, ushort quantityOfCoils)
         {
-            WriteMultipleCoilsResponse request = new WriteMultipleCoilsResponse()
+            WriteMultipleCoilsResponse request = new()
             {
                 SlaveAddress = slaveAddress,
                 FunctionCode = 15,
@@ -33,7 +33,7 @@ namespace SkunkLab.Modbus.Messaging
 
         public static WriteMultipleCoilsResponse Create(byte unitId, ushort transactionId, ushort protocolId, ushort startingAddress, ushort quantityOfCoils)
         {
-            WriteMultipleCoilsResponse request = new WriteMultipleCoilsResponse()
+            WriteMultipleCoilsResponse request = new()
             {
                 Header = new MbapHeader() { ProtocolId = protocolId, TransactionId = transactionId, UnitId = unitId },
                 SlaveAddress = unitId,
@@ -48,7 +48,7 @@ namespace SkunkLab.Modbus.Messaging
         }
         public static WriteMultipleCoilsResponse Decode(string message)
         {
-            WriteMultipleCoilsResponse response = JsonConvert.DeserializeObject<WriteMultipleCoilsResponse>(message);
+            WriteMultipleCoilsResponse response = JsonSerializer.Deserialize<WriteMultipleCoilsResponse>(message);
             byte[] msg = response.Encode();
             return Decode(msg);
         }
@@ -68,7 +68,7 @@ namespace SkunkLab.Modbus.Messaging
                     SlaveAddress = header.UnitId,
                     FunctionCode = message[index++],
                     StartingAddress = (ushort)(message[index++] << 0x08 | message[index++]),
-                    QuantityOfCoils = (ushort)(message[index++] << 0x08 | message[index++]),                    
+                    QuantityOfCoils = (ushort)(message[index++] << 0x08 | message[index++]),
                     Protocol = ProtocolType.TCP
                 };
             }
@@ -79,7 +79,7 @@ namespace SkunkLab.Modbus.Messaging
                 Buffer.BlockCopy(message, 0, data, 0, data.Length);
                 byte[] checkSum = Crc.Compute(data);
 
-                if (message[message.Length - 2] != checkSum[0] || message[message.Length - 1] != checkSum[1])
+                if (message[^2] != checkSum[0] || message[^1] != checkSum[1])
                     throw new CheckSumMismatchException("Check sum mismatch.");
                 int index = 0;
 
@@ -95,45 +95,47 @@ namespace SkunkLab.Modbus.Messaging
             }
         }
 
-        [JsonProperty("messageType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("messageType")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override MessageType Type
         {
             get { return type; }
             set { }
         }
 
-        [JsonProperty("protocol")]
+        [JsonPropertyName("protocol")]
         public override ProtocolType Protocol { get; set; }
 
-        [JsonProperty("header")]
+        [JsonPropertyName("header")]
         public override MbapHeader Header { get; set; }
 
-        [JsonProperty("slaveAddress")]
+        [JsonPropertyName("slaveAddress")]
         public override byte SlaveAddress { get; set; }
 
-        [JsonProperty("code")]
+        [JsonPropertyName("code")]
         public override byte FunctionCode { get; set; }
 
-        [JsonProperty("startingAddress")]
+        [JsonPropertyName("startingAddress")]
         public ushort StartingAddress { get; set; }
 
-        [JsonProperty("quantityOfCoils")]
+        [JsonPropertyName("quantityOfCoils")]
         public ushort QuantityOfCoils { get; set; }
 
-        [JsonProperty("checkSum")]
+        [JsonPropertyName("checkSum")]
         public string CheckSum { get; set; }
 
         public override byte[] ConvertToRtu()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(SlaveAddress);
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));
-            frames.Add((byte)(StartingAddress & 0x00FF));
-            frames.Add((byte)((QuantityOfCoils >> 8) & 0x00FF));
-            frames.Add((byte)(QuantityOfCoils & 0x00FF));
-            
+            List<byte> frames = new()
+            {
+                SlaveAddress,
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),
+                (byte)(StartingAddress & 0x00FF),
+                (byte)((QuantityOfCoils >> 8) & 0x00FF),
+                (byte)(QuantityOfCoils & 0x00FF)
+            };
+
             byte[] crc = Crc.Compute(frames.ToArray());
             byte[] message = new byte[frames.Count + crc.Length];
             Buffer.BlockCopy(frames.ToArray(), 0, message, 0, frames.Count);
@@ -144,14 +146,16 @@ namespace SkunkLab.Modbus.Messaging
 
         public override byte[] ConvertToTcp(byte unitId, ushort transactionId, ushort protocolId = 0)
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));
-            frames.Add((byte)(StartingAddress & 0x00FF));
-            frames.Add((byte)((QuantityOfCoils >> 8) & 0x00FF));
-            frames.Add((byte)(QuantityOfCoils & 0x00FF));
-            
-            MbapHeader header = new MbapHeader() { UnitId = unitId, TransactionId = transactionId, ProtocolId = protocolId, Length = (ushort)(frames.Count + 1) };
+            List<byte> frames = new()
+            {
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),
+                (byte)(StartingAddress & 0x00FF),
+                (byte)((QuantityOfCoils >> 8) & 0x00FF),
+                (byte)(QuantityOfCoils & 0x00FF)
+            };
+
+            MbapHeader header = new() { UnitId = unitId, TransactionId = transactionId, ProtocolId = protocolId, Length = (ushort)(frames.Count + 1) };
             byte[] headerBytes = header.Encode();
             byte[] message = new byte[headerBytes.Length + frames.Count];
             Buffer.BlockCopy(headerBytes, 0, message, 0, headerBytes.Length);
@@ -166,18 +170,20 @@ namespace SkunkLab.Modbus.Messaging
 
         public override string Serialize()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         private byte[] EncodeTcp()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));//MSB
-            frames.Add((byte)(StartingAddress & 0x00FF));//LSB
-            frames.Add((byte)((QuantityOfCoils >> 8) & 0x00FF)); //MSB
-            frames.Add((byte)(QuantityOfCoils & 0x00FF)); //LSB  
-            
+            List<byte> frames = new()
+            {
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),//MSB
+                (byte)(StartingAddress & 0x00FF),//LSB
+                (byte)((QuantityOfCoils >> 8) & 0x00FF), //MSB
+                (byte)(QuantityOfCoils & 0x00FF) //LSB  
+            };
+
             Header.Length = (ushort)(frames.Count + 1);
             byte[] header = Header.Encode();
             byte[] message = new byte[header.Length + frames.Count];
@@ -189,14 +195,16 @@ namespace SkunkLab.Modbus.Messaging
 
         private byte[] EncodeRtu()
         {
-            List<byte> list = new List<byte>();
-            list.Add(SlaveAddress);
-            list.Add(FunctionCode);
-            list.Add((byte)((StartingAddress >> 8) & 0x00FF));
-            list.Add((byte)(StartingAddress & 0x00FF));
-            list.Add((byte)((QuantityOfCoils >> 8) & 0x00FF));
-            list.Add((byte)(QuantityOfCoils & 0x00FF));
-            
+            List<byte> list = new()
+            {
+                SlaveAddress,
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),
+                (byte)(StartingAddress & 0x00FF),
+                (byte)((QuantityOfCoils >> 8) & 0x00FF),
+                (byte)(QuantityOfCoils & 0x00FF)
+            };
+
             byte[] crc = Crc.Compute(list.ToArray());
             byte[] message = new byte[list.Count + crc.Length];
             Buffer.BlockCopy(list.ToArray(), 0, message, 0, list.Count);

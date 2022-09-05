@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
     [Serializable]
-    [JsonObject]
+
     public class ReadDiscreteInputs : ModbusMessage
     {
         public ReadDiscreteInputs()
@@ -22,7 +22,7 @@ namespace SkunkLab.Modbus.Messaging
             {
                 SlaveAddress = slaveId,
                 FunctionCode = 2,
-                StartingAddress = (ushort)(startingAddress),
+                StartingAddress = startingAddress,
                 QuantityOfInputs = quantity,
                 Protocol = ProtocolType.RTU
             };
@@ -38,7 +38,7 @@ namespace SkunkLab.Modbus.Messaging
                 Header = new MbapHeader() { ProtocolId = protocolId, TransactionId = transactionId, UnitId = unitId },
                 SlaveAddress = unitId,
                 FunctionCode = 2,
-                StartingAddress = (ushort)(startingAddress),
+                StartingAddress = startingAddress,
                 QuantityOfInputs = quantity,
                 Protocol = ProtocolType.TCP
             };
@@ -92,36 +92,36 @@ namespace SkunkLab.Modbus.Messaging
 
         public static ReadDiscreteInputs Decode(string message)
         {
-            return JsonConvert.DeserializeObject<ReadDiscreteInputs>(message);
+            return JsonSerializer.Deserialize<ReadDiscreteInputs>(message);
         }
 
-        [JsonProperty("messageType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("messageType")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override MessageType Type
         {
             get { return type; }
             set { }
         }
 
-        [JsonProperty("protocol")]
+        [JsonPropertyName("protocol")]
         public override ProtocolType Protocol { get; set; }
 
-        [JsonProperty("header")]
+        [JsonPropertyName("header")]
         public override MbapHeader Header { get; set; }
 
-        [JsonProperty("slaveAddress")]
+        [JsonPropertyName("slaveAddress")]
         public override byte SlaveAddress { get; set; }
 
-        [JsonProperty("code")]
+        [JsonPropertyName("code")]
         public override byte FunctionCode { get; set; }
 
-        [JsonProperty("startingAddress")]
+        [JsonPropertyName("startingAddress")]
         public ushort StartingAddress { get; set; }
 
-        [JsonProperty("quantityOfInputs")]
+        [JsonPropertyName("quantityOfInputs")]
         public ushort QuantityOfInputs { get; set; }
 
-        [JsonProperty("checkSum")]
+        [JsonPropertyName("checkSum")]
         public string CheckSum { get; set; }
 
         public override byte[] Encode()
@@ -166,17 +166,19 @@ namespace SkunkLab.Modbus.Messaging
 
         public override string Serialize()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         private byte[] EncodeTcp()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));//MSB
-            frames.Add((byte)(StartingAddress & 0x00FF));//LSB
-            frames.Add((byte)((QuantityOfInputs >> 8) & 0x00FF)); //MSB
-            frames.Add((byte)(QuantityOfInputs & 0x00FF)); //LSB                                                         
+            List<byte> frames = new List<byte>
+            {
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),//MSB
+                (byte)(StartingAddress & 0x00FF),//LSB
+                (byte)((QuantityOfInputs >> 8) & 0x00FF), //MSB
+                (byte)(QuantityOfInputs & 0x00FF) //LSB                                                         
+            };
             Header.Length = (ushort)(frames.Count + 1);
             byte[] header = Header.Encode();
             byte[] message = new byte[header.Length + frames.Count];

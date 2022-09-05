@@ -1,8 +1,6 @@
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using SkunkLab.Modbus.Messaging;
-using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace SkunkLab.Modbus.UnitTests
 {
@@ -64,10 +62,8 @@ namespace SkunkLab.Modbus.UnitTests
         {
             string expected = "04-01-00-0A-00-0D-DD-98";
             ReadCoils coils = ReadCoils.Create(4, 10, 13);
-            //Coils coils = new Coils(1, 4, 10, 13);
             string jsonString = coils.Serialize();
-            ReadCoils coils2 = JsonConvert.DeserializeObject<ReadCoils>(jsonString);
-            //Coils coils2 = JsonConvert.DeserializeObject<Coils>(jsonString);
+            ReadCoils coils2 = JsonSerializer.Deserialize<ReadCoils>(jsonString);
             byte[] msg = coils2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);
@@ -79,10 +75,8 @@ namespace SkunkLab.Modbus.UnitTests
             string expected = "00-01-00-00-00-06-04-01-00-0A-00-0D";
             ReadCoils coils = ReadCoils.Create(4, 1, 0, 10, 13);
 
-            //Coils coils = new Coils(4, 1, 0, 1, 10, 13);
             string jsonString = coils.Serialize();
-            ReadCoils coils2 = JsonConvert.DeserializeObject<ReadCoils>(jsonString);
-            //Coils coils2 = JsonConvert.DeserializeObject<Coils>(jsonString);
+            ReadCoils coils2 = JsonSerializer.Deserialize<ReadCoils>(jsonString);
             byte[] msg = coils2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);
@@ -90,6 +84,6 @@ namespace SkunkLab.Modbus.UnitTests
 
         #endregion
 
-        
+
     }
 }

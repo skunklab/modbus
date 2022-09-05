@@ -1,14 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
     [Serializable]
-    [JsonObject]
+
     public class WriteMultipleRegisters : ModbusMessage
     {
         public WriteMultipleRegisters()
@@ -100,45 +99,45 @@ namespace SkunkLab.Modbus.Messaging
 
         public static WriteMultipleRegisters Decode(string message)
         {
-            WriteMultipleRegisters response = JsonConvert.DeserializeObject<WriteMultipleRegisters>(message);
+            WriteMultipleRegisters response = JsonSerializer.Deserialize<WriteMultipleRegisters>(message);
             byte[] msg = response.Encode();
             return Decode(msg);
         }
 
 
-        [JsonProperty("messageType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("messageType")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override MessageType Type
         {
             get { return type; }
             set { }
         }
 
-        [JsonProperty("protocol")]
+        [JsonPropertyName("protocol")]
         public override ProtocolType Protocol { get; set; }
 
-        [JsonProperty("header")]
+        [JsonPropertyName("header")]
         public override MbapHeader Header { get; set; }
 
-        [JsonProperty("slaveAddress")]
+        [JsonPropertyName("slaveAddress")]
         public override byte SlaveAddress { get; set; }
 
-        [JsonProperty("code")]
+        [JsonPropertyName("code")]
         public override byte FunctionCode { get; set; }
 
-        [JsonProperty("startingAddress")]
+        [JsonPropertyName("startingAddress")]
         public ushort StartingAddress { get; set; }
 
-        [JsonProperty("quantityOfRegisters")]
+        [JsonPropertyName("quantityOfRegisters")]
         public ushort QuantityOfRegisters { get; set; }
 
-        [JsonProperty("byteCount")]
+        [JsonPropertyName("byteCount")]
         public byte ByteCount { get; set; }
 
-        [JsonProperty("data")]
+        [JsonPropertyName("data")]
         public ushort[] Data { get; set; }
 
-        [JsonProperty("checkSum")]
+        [JsonPropertyName("checkSum")]
         public string CheckSum { get; set; }
 
         public override byte[] Encode()
@@ -148,14 +147,16 @@ namespace SkunkLab.Modbus.Messaging
 
         public override byte[] ConvertToRtu()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(SlaveAddress);
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));
-            frames.Add((byte)(StartingAddress & 0x00FF));
-            frames.Add((byte)((QuantityOfRegisters >> 8) & 0x00FF));
-            frames.Add((byte)(QuantityOfRegisters & 0x00FF));
-            frames.Add(ByteCount);
+            List<byte> frames = new List<byte>
+            {
+                SlaveAddress,
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),
+                (byte)(StartingAddress & 0x00FF),
+                (byte)((QuantityOfRegisters >> 8) & 0x00FF),
+                (byte)(QuantityOfRegisters & 0x00FF),
+                ByteCount
+            };
 
             for (int i = 0; i < Data.Length; i++)
             {
@@ -173,13 +174,15 @@ namespace SkunkLab.Modbus.Messaging
 
         public override byte[] ConvertToTcp(byte unitId, ushort transactionId, ushort protocolId = 0)
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));
-            frames.Add((byte)(StartingAddress & 0x00FF));
-            frames.Add((byte)((QuantityOfRegisters >> 8) & 0x00FF));
-            frames.Add((byte)(QuantityOfRegisters & 0x00FF));
-            frames.Add(ByteCount);
+            List<byte> frames = new List<byte>
+            {
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),
+                (byte)(StartingAddress & 0x00FF),
+                (byte)((QuantityOfRegisters >> 8) & 0x00FF),
+                (byte)(QuantityOfRegisters & 0x00FF),
+                ByteCount
+            };
 
             for (int i = 0; i < Data.Length; i++)
             {
@@ -196,22 +199,24 @@ namespace SkunkLab.Modbus.Messaging
             return message;
         }
 
-        
+
 
         public override string Serialize()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         private byte[] EncodeTcp()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));//MSB
-            frames.Add((byte)(StartingAddress & 0x00FF));//LSB
-            frames.Add((byte)((QuantityOfRegisters >> 8) & 0x00FF)); //MSB
-            frames.Add((byte)(QuantityOfRegisters & 0x00FF)); //LSB  
-            frames.Add(ByteCount);
+            List<byte> frames = new List<byte>
+            {
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),//MSB
+                (byte)(StartingAddress & 0x00FF),//LSB
+                (byte)((QuantityOfRegisters >> 8) & 0x00FF), //MSB
+                (byte)(QuantityOfRegisters & 0x00FF), //LSB  
+                ByteCount
+            };
 
             for (int i = 0; i < Data.Length; i++)
             {
@@ -230,21 +235,23 @@ namespace SkunkLab.Modbus.Messaging
 
         private byte[] EncodeRtu()
         {
-            List<byte> list = new List<byte>();
-            list.Add(SlaveAddress);
-            list.Add(FunctionCode);
-            list.Add((byte)((StartingAddress >> 8) & 0x00FF));
-            list.Add((byte)(StartingAddress & 0x00FF));
-            list.Add((byte)((QuantityOfRegisters >> 8) & 0x00FF));
-            list.Add((byte)(QuantityOfRegisters & 0x00FF));
-            list.Add(ByteCount);
+            List<byte> list = new List<byte>
+            {
+                SlaveAddress,
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),
+                (byte)(StartingAddress & 0x00FF),
+                (byte)((QuantityOfRegisters >> 8) & 0x00FF),
+                (byte)(QuantityOfRegisters & 0x00FF),
+                ByteCount
+            };
             for (int i = 0; i < Data.Length; i++)
             {
                 list.Add((byte)((Data[i] >> 8) & 0x00FF));
                 list.Add((byte)(Data[i] & 0x00FF));
             }
 
-            byte[] crc = Crc.Compute(list.ToArray());                        
+            byte[] crc = Crc.Compute(list.ToArray());
             byte[] message = new byte[list.Count + crc.Length];
             Buffer.BlockCopy(list.ToArray(), 0, message, 0, list.Count);
             Buffer.BlockCopy(crc, 0, message, list.Count, crc.Length);

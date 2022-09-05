@@ -1,17 +1,17 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
     [Serializable]
-    [JsonObject]
+
     public class ReadCoils : ModbusMessage
     {
         public ReadCoils()
-        {                
+        {
         }
 
         private const MessageType type = MessageType.ReadCoils;
@@ -22,13 +22,13 @@ namespace SkunkLab.Modbus.Messaging
             {
                 SlaveAddress = slaveId,
                 FunctionCode = 1,
-                StartingAddress = (ushort)(startingAddress),
+                StartingAddress = startingAddress,
                 QuantityOfCoils = quantity,
                 Protocol = ProtocolType.RTU
             };
 
             byte[] encoded = request.Encode();
-            return ReadCoils.Decode(encoded);            
+            return ReadCoils.Decode(encoded);
         }
 
         public static ReadCoils Create(byte unitId, ushort transactionId, ushort protocolId, ushort startingAddress, ushort quantity)
@@ -38,11 +38,11 @@ namespace SkunkLab.Modbus.Messaging
                 Header = new MbapHeader() { ProtocolId = protocolId, TransactionId = transactionId, UnitId = unitId },
                 SlaveAddress = unitId,
                 FunctionCode = 1,
-                StartingAddress = (ushort)(startingAddress),
+                StartingAddress = startingAddress,
                 QuantityOfCoils = quantity,
                 Protocol = ProtocolType.TCP
             };
-            
+
             byte[] rtuEncoded = request.Encode();
             return ReadCoils.Decode(rtuEncoded);
         }
@@ -51,7 +51,7 @@ namespace SkunkLab.Modbus.Messaging
         {
             if (message == null)
                 throw new ArgumentNullException("message");
-            
+
             try
             {
                 MbapHeader header = MbapHeader.Decode(message);
@@ -62,11 +62,11 @@ namespace SkunkLab.Modbus.Messaging
                     SlaveAddress = header.UnitId,
                     FunctionCode = message[index++],
                     StartingAddress = (ushort)(message[index++] << 0x08 | message[index++]),
-                    QuantityOfCoils = (ushort)(message[index++] << 0x08 | message[index++]),                    
+                    QuantityOfCoils = (ushort)(message[index++] << 0x08 | message[index++]),
                     Protocol = ProtocolType.TCP
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger?.LogDebug(ex, "Modbus TCP header read fault.");
                 byte[] data = new byte[message.Length - 2];
@@ -92,39 +92,39 @@ namespace SkunkLab.Modbus.Messaging
 
         public static ReadCoils Decode(string message)
         {
-            return JsonConvert.DeserializeObject<ReadCoils>(message);
+            return JsonSerializer.Deserialize<ReadCoils>(message);
         }
-        
-        
 
-        [JsonProperty("messageType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+
+
+        [JsonPropertyName("messageType")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override MessageType Type
         {
             get { return type; }
             set { }
         }
 
-        [JsonProperty("protocol")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("protocol")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override ProtocolType Protocol { get; set; }
 
-        [JsonProperty("header")]
+        [JsonPropertyName("header")]
         public override MbapHeader Header { get; set; }
 
-        [JsonProperty("slaveAddress")]
+        [JsonPropertyName("slaveAddress")]
         public override byte SlaveAddress { get; set; }
 
-        [JsonProperty("function")]
+        [JsonPropertyName("function")]
         public override byte FunctionCode { get; set; }
 
-        [JsonProperty("startingAddress")]
+        [JsonPropertyName("startingAddress")]
         public ushort StartingAddress { get; set; }
 
-        [JsonProperty("quantity")]
+        [JsonPropertyName("quantity")]
         public ushort QuantityOfCoils { get; set; }
 
-        [JsonProperty("checkSum")]
+        [JsonPropertyName("checkSum")]
         public string CheckSum { get; set; }
 
         public override byte[] Encode()
@@ -151,7 +151,7 @@ namespace SkunkLab.Modbus.Messaging
         }
 
         public override byte[] ConvertToTcp(byte unitId, ushort transactionId, ushort protocolId = 0)
-        {            
+        {
             int index = 0;
             byte[] frames = new byte[5];
             frames[index++] = FunctionCode;
@@ -169,17 +169,19 @@ namespace SkunkLab.Modbus.Messaging
 
         public override string Serialize()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         private byte[] EncodeTcp()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));//MSB
-            frames.Add((byte)(StartingAddress & 0x00FF));//LSB
-            frames.Add((byte)((QuantityOfCoils >> 8) & 0x00FF)); //MSB
-            frames.Add((byte)(QuantityOfCoils & 0x00FF)); //LSB                                                         
+            List<byte> frames = new List<byte>
+            {
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),//MSB
+                (byte)(StartingAddress & 0x00FF),//LSB
+                (byte)((QuantityOfCoils >> 8) & 0x00FF), //MSB
+                (byte)(QuantityOfCoils & 0x00FF) //LSB                                                         
+            };
             Header.Length = (ushort)(frames.Count + 1);
             byte[] header = Header.Encode();
             byte[] message = new byte[header.Length + frames.Count];

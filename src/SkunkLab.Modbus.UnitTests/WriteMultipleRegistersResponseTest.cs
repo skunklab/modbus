@@ -1,13 +1,13 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using SkunkLab.Modbus.Messaging;
 using System;
 using System.Linq;
+using System.Text.Json;
 
 namespace SkunkLab.Modbus.UnitTests
 {
     [TestClass]
-    public class WriteMultipleRegistersResponseTest 
+    public class WriteMultipleRegistersResponseTest
     {
         [TestMethod]
         public void WriteMultipleRegistersResponseRtuTest()
@@ -86,7 +86,7 @@ namespace SkunkLab.Modbus.UnitTests
                      .ToArray();
             WriteMultipleRegistersResponse inputs = WriteMultipleRegistersResponse.Decode(message);
             string jsonString = inputs.Serialize();
-            WriteMultipleRegistersResponse inputs2 = JsonConvert.DeserializeObject<WriteMultipleRegistersResponse>(jsonString);
+            WriteMultipleRegistersResponse inputs2 = JsonSerializer.Deserialize<WriteMultipleRegistersResponse>(jsonString);
             byte[] msg = inputs2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);
@@ -103,7 +103,7 @@ namespace SkunkLab.Modbus.UnitTests
                      .ToArray();
             WriteMultipleRegistersResponse inputs = WriteMultipleRegistersResponse.Decode(message);
             string jsonString = inputs.Serialize();
-            WriteMultipleRegistersResponse inputs2 = JsonConvert.DeserializeObject<WriteMultipleRegistersResponse>(jsonString);
+            WriteMultipleRegistersResponse inputs2 = JsonSerializer.Deserialize<WriteMultipleRegistersResponse>(jsonString);
             byte[] msg = inputs2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);

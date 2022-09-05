@@ -1,8 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using SkunkLab.Modbus.Messaging;
 using System;
 using System.Linq;
+using System.Text.Json;
 
 namespace SkunkLab.Modbus.UnitTests
 {
@@ -25,7 +25,7 @@ namespace SkunkLab.Modbus.UnitTests
             Assert.AreEqual(expected, actual);
         }
 
-       
+
 
         [TestMethod]
         public void ReadCoilsResponseTcpTest()
@@ -88,7 +88,7 @@ namespace SkunkLab.Modbus.UnitTests
                      .ToArray();
             ReadCoilsResponse coils = ReadCoilsResponse.Decode(message);
             string jsonString = coils.Serialize();
-            ReadCoilsResponse coils2 = JsonConvert.DeserializeObject<ReadCoilsResponse>(jsonString);
+            ReadCoilsResponse coils2 = JsonSerializer.Deserialize<ReadCoilsResponse>(jsonString);
             byte[] msg = coils2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);
@@ -105,7 +105,7 @@ namespace SkunkLab.Modbus.UnitTests
                      .ToArray();
             ReadCoilsResponse coils = ReadCoilsResponse.Decode(message);
             string jsonString = coils.Serialize();
-            ReadCoilsResponse coils2 = JsonConvert.DeserializeObject<ReadCoilsResponse>(jsonString);
+            ReadCoilsResponse coils2 = JsonSerializer.Deserialize<ReadCoilsResponse>(jsonString);
             byte[] msg = coils2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);

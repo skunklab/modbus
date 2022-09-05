@@ -15,7 +15,7 @@ namespace SkunkLab.Modbus.Messaging
                 return GetDecodedMessage(code, message);
             }
             catch
-            {                
+            {
                 int index = 0;
                 index++;
                 byte code = message[index++];
@@ -49,7 +49,7 @@ namespace SkunkLab.Modbus.Messaging
         public static ModbusMessage Create(MessageType type, byte slaveId, ushort startingAddress, ushort quantity)
         {
             int num = (int)type;
-                
+
             if (num == 1)
                 return ReadCoils.Create(slaveId, startingAddress, quantity);
             if (num == 2)

@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using SkunkLab.Modbus.Messaging;
+using System.Text.Json;
 
 namespace SkunkLab.Modbus.UnitTests
 {
@@ -54,7 +54,7 @@ namespace SkunkLab.Modbus.UnitTests
             string expected = "1C-10-00-64-00-02-04-03-E8-07-D8-19-02";
             WriteMultipleRegisters registers = WriteMultipleRegisters.Create(28, 100, new ushort[] { 1000, 2008 });
             string jsonString = registers.Serialize();
-            WriteMultipleRegisters registers2 = JsonConvert.DeserializeObject<WriteMultipleRegisters>(jsonString);
+            WriteMultipleRegisters registers2 = JsonSerializer.Deserialize<WriteMultipleRegisters>(jsonString);
             byte[] msg = registers2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);
@@ -66,7 +66,7 @@ namespace SkunkLab.Modbus.UnitTests
             string expected = "00-23-00-00-00-0B-1C-10-00-64-00-02-04-03-E8-07-D8";
             WriteMultipleRegisters registers = WriteMultipleRegisters.Create(28, 35, 0, 100, new ushort[] { 1000, 2008 });
             string jsonString = registers.Serialize();
-            WriteMultipleRegisters registers2 = JsonConvert.DeserializeObject<WriteMultipleRegisters>(jsonString);
+            WriteMultipleRegisters registers2 = JsonSerializer.Deserialize<WriteMultipleRegisters>(jsonString);
             byte[] msg = registers2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);

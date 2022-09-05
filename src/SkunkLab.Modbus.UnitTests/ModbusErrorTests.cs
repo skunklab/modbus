@@ -1,9 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using SkunkLab.Modbus.Messaging;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Text.Json;
 
 namespace SkunkLab.Modbus.UnitTests
 {
@@ -56,8 +53,8 @@ namespace SkunkLab.Modbus.UnitTests
         {
             string expected = "0A-81-02-B0-53";
             ModbusError error = ModbusError.Create(10, 1, ModbusErrorCode.IllegalDataAddress);
-            string jstring = JsonConvert.SerializeObject(error);
-            ModbusError error2 = JsonConvert.DeserializeObject<ModbusError>(jstring);
+            string jstring = JsonSerializer.Serialize(error);
+            ModbusError error2 = JsonSerializer.Deserialize<ModbusError>(jstring);
             string actual = System.BitConverter.ToString(error2.Encode());
             Assert.AreEqual(expected, actual);
         }
@@ -67,8 +64,8 @@ namespace SkunkLab.Modbus.UnitTests
         {
             string expected = "00-05-00-00-00-03-0A-81-02";
             ModbusError error = ModbusError.Create(10, 5, 0, 1, ModbusErrorCode.IllegalDataAddress);
-            string jstring = JsonConvert.SerializeObject(error);
-            ModbusError error2 = JsonConvert.DeserializeObject<ModbusError>(jstring);
+            string jstring = JsonSerializer.Serialize(error);
+            ModbusError error2 = JsonSerializer.Deserialize<ModbusError>(jstring);
             string actual = System.BitConverter.ToString(error2.Encode());
             Assert.AreEqual(expected, actual);
 
