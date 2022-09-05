@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace SkunkLab.Modbus.Messaging
+﻿namespace SkunkLab.Modbus.Messaging
 {
     public abstract class ModbusMessage
     {

@@ -1,25 +1,21 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
-    public class BitArrayConverter : Newtonsoft.Json.JsonConverter
+    public class BitArrayConverter : JsonConverter<BitArray>
     {
-        public override bool CanConvert(Type objectType)
+        public override BitArray Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return objectType == typeof(BitArray);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var bytes = serializer.Deserialize<bool[]>(reader);
+            var bytes = JsonSerializer.Deserialize<bool[]>(ref reader, options);
             return bytes == null ? null : new BitArray(bytes);
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, BitArray value, JsonSerializerOptions options)
         {
-            serializer.Serialize(writer, ((BitArray)value).BitArrayToBoolArray());
+            JsonSerializer.Serialize(writer, value, options);
         }
     }
 }

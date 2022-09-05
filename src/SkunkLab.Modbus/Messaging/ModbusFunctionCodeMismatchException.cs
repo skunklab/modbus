@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
-    public class ModbusFunctionCodeMismatchException  : Exception
+    public class ModbusFunctionCodeMismatchException : Exception
     {
         public ModbusFunctionCodeMismatchException()
         {

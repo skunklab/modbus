@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
@@ -80,37 +80,37 @@ namespace SkunkLab.Modbus.Messaging
 
         public static ReadCoils Decode(string message)
         {
-            return JsonConvert.DeserializeObject<ReadCoils>(message);
+            return JsonSerializer.Deserialize<ReadCoils>(message);
         }
 
         private const MessageType type = MessageType.Error;
 
-        [JsonProperty("messageType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("messageType")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override MessageType Type
         {
             get { return type; }
             set { }
         }
 
-        [JsonProperty("protocol")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("protocol")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override ProtocolType Protocol { get; set; }
 
-        [JsonProperty("header")]
+        [JsonPropertyName("header")]
         public override MbapHeader Header { get; set; }
 
-        [JsonProperty("slaveAddress")]
+        [JsonPropertyName("slaveAddress")]
         public override byte SlaveAddress { get; set; }
 
-        [JsonProperty("function")]
+        [JsonPropertyName("function")]
         public override byte FunctionCode { get; set; }
 
-        [JsonProperty("errorCode")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("errorCode")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public ModbusErrorCode ErrorCode { get; set; }
 
-        [JsonProperty("checkSum")]
+        [JsonPropertyName("checkSum")]
         public string CheckSum { get; set; }
 
         public override byte[] ConvertToRtu()
@@ -119,7 +119,7 @@ namespace SkunkLab.Modbus.Messaging
             byte[] frames = new byte[3];
             frames[index++] = SlaveAddress;
             frames[index++] = (byte)((1 << 7) | FunctionCode);
-            frames[index++] = (byte)Convert.ToByte(ErrorCode);
+            frames[index++] = Convert.ToByte(ErrorCode);
 
             byte[] crc = Crc.Compute(frames);
             byte[] message = new byte[frames.Length + crc.Length];
@@ -133,7 +133,7 @@ namespace SkunkLab.Modbus.Messaging
             int index = 0;
             byte[] frames = new byte[2];
             frames[index++] = (byte)((1 << 7) | FunctionCode);
-            frames[index++] = (byte)Convert.ToByte(ErrorCode);
+            frames[index++] = Convert.ToByte(ErrorCode);
             MbapHeader header = new MbapHeader() { UnitId = unitId, TransactionId = transactionId, ProtocolId = protocolId, Length = (ushort)(frames.Length + 1) };
             byte[] headerBytes = header.Encode();
             byte[] message = new byte[headerBytes.Length + frames.Length];
@@ -149,14 +149,16 @@ namespace SkunkLab.Modbus.Messaging
 
         public override string Serialize()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         private byte[] EncodeTcp()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add((byte)((1 << 7) | FunctionCode));
-            frames.Add((byte)Convert.ToByte(ErrorCode));                                                    
+            List<byte> frames = new List<byte>
+            {
+                (byte)((1 << 7) | FunctionCode),
+                Convert.ToByte(ErrorCode)
+            };
             Header.Length = (ushort)(frames.Count + 1);
             byte[] header = Header.Encode();
             byte[] message = new byte[header.Length + frames.Count];
@@ -172,7 +174,7 @@ namespace SkunkLab.Modbus.Messaging
             byte[] frames = new byte[3];
             frames[index++] = SlaveAddress;
             frames[index++] = (byte)((1 << 7) | FunctionCode);
-            frames[index++] = (byte)Convert.ToByte(ErrorCode);
+            frames[index++] = Convert.ToByte(ErrorCode);
 
             byte[] crc = Crc.Compute(frames);
             byte[] message = new byte[frames.Length + crc.Length];

@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
     [Serializable]
-    [JsonObject]
+
     public class WriteSingleRegisterResponse : ModbusMessage
     {
         private const MessageType type = MessageType.WriteSingleRegisterResponse;
@@ -58,36 +58,36 @@ namespace SkunkLab.Modbus.Messaging
 
         public static WriteSingleRegisterResponse Decode(string message)
         {
-            return JsonConvert.DeserializeObject<WriteSingleRegisterResponse>(message);
+            return JsonSerializer.Deserialize<WriteSingleRegisterResponse>(message);
         }
 
-        [JsonProperty("messageType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("messageType")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override MessageType Type
         {
             get { return type; }
             set { }
         }
 
-        [JsonProperty("protocol")]
+        [JsonPropertyName("protocol")]
         public override ProtocolType Protocol { get; set; }
 
-        [JsonProperty("header")]
+        [JsonPropertyName("header")]
         public override MbapHeader Header { get; set; }
 
-        [JsonProperty("slaveAddress")]
+        [JsonPropertyName("slaveAddress")]
         public override byte SlaveAddress { get; set; }
 
-        [JsonProperty("code")]
+        [JsonPropertyName("code")]
         public override byte FunctionCode { get; set; }
 
-        [JsonProperty("startingAddress")]
+        [JsonPropertyName("startingAddress")]
         public ushort StartingAddress { get; set; }
 
-        [JsonProperty("data")]
+        [JsonPropertyName("data")]
         public ushort Data { get; set; }
 
-        [JsonProperty("checkSum")]
+        [JsonPropertyName("checkSum")]
         public string CheckSum { get; set; }
 
         public override byte[] ConvertToRtu()
@@ -132,7 +132,7 @@ namespace SkunkLab.Modbus.Messaging
 
         public override string Serialize()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         private byte[] EncodeRtu()
@@ -155,12 +155,14 @@ namespace SkunkLab.Modbus.Messaging
 
         private byte[] EncodeTcp()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(FunctionCode);
-            frames.Add((byte)((StartingAddress >> 8) & 0x00FF));//MSB
-            frames.Add((byte)(StartingAddress & 0x00FF));//LSB
-            frames.Add((byte)((Data >> 8) & 0x00FF)); //MSB
-            frames.Add((byte)(Data & 0x00FF)); //LSB                                                         
+            List<byte> frames = new List<byte>
+            {
+                FunctionCode,
+                (byte)((StartingAddress >> 8) & 0x00FF),//MSB
+                (byte)(StartingAddress & 0x00FF),//LSB
+                (byte)((Data >> 8) & 0x00FF), //MSB
+                (byte)(Data & 0x00FF) //LSB                                                         
+            };
             Header.Length = (ushort)(frames.Count + 1);
             byte[] header = Header.Encode();
             byte[] message = new byte[header.Length + frames.Count];

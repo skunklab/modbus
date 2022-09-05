@@ -1,8 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using SkunkLab.Modbus.Messaging;
 using System;
 using System.Linq;
+using System.Text.Json;
 
 namespace SkunkLab.Modbus.UnitTests
 {
@@ -86,7 +86,7 @@ namespace SkunkLab.Modbus.UnitTests
                      .ToArray();
             WriteSingleRegisterResponse inputs = WriteSingleRegisterResponse.Decode(message);
             string jsonString = inputs.Serialize();
-            WriteSingleRegisterResponse inputs2 = JsonConvert.DeserializeObject<WriteSingleRegisterResponse>(jsonString);
+            WriteSingleRegisterResponse inputs2 = JsonSerializer.Deserialize<WriteSingleRegisterResponse>(jsonString);
             byte[] msg = inputs2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);
@@ -103,7 +103,7 @@ namespace SkunkLab.Modbus.UnitTests
                      .ToArray();
             WriteSingleRegisterResponse inputs = WriteSingleRegisterResponse.Decode(message);
             string jsonString = inputs.Serialize();
-            WriteSingleRegisterResponse inputs2 = JsonConvert.DeserializeObject<WriteSingleRegisterResponse>(jsonString);
+            WriteSingleRegisterResponse inputs2 = JsonSerializer.Deserialize<WriteSingleRegisterResponse>(jsonString);
             byte[] msg = inputs2.Encode();
             string actual = System.BitConverter.ToString(msg);
             Assert.AreEqual(expected, actual);

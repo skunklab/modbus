@@ -1,22 +1,22 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkunkLab.Modbus.Messaging
 {
     [Serializable]
-    [JsonObject]
+
     public class ReadCoilsResponse : ModbusResponseMessage
     {
         private const MessageType type = MessageType.ReadCoils;
 
-        new public static ReadCoilsResponse Decode(byte[] message, ILogger logger = null)
+        public static new ReadCoilsResponse Decode(byte[] message, ILogger logger = null)
         {
             if (message == null)
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
 
             try
             {
@@ -29,7 +29,7 @@ namespace SkunkLab.Modbus.Messaging
                     Protocol = ProtocolType.TCP,
                     FunctionCode = message[index++],
                     ByteCount = message[index++],
-                    Data = GetValues(index, message[index-1], message)
+                    Data = GetValues(index, message[index - 1], message)
                 };
             }
             catch (ModbusTcpException ex)
@@ -39,7 +39,7 @@ namespace SkunkLab.Modbus.Messaging
                 Buffer.BlockCopy(message, 0, data, 0, data.Length);
                 byte[] checkSum = Crc.Compute(data);
 
-                if (message[message.Length - 2] != checkSum[0] || message[message.Length - 1] != checkSum[1])
+                if (message[^2] != checkSum[0] || message[^1] != checkSum[1])
                     throw new CheckSumMismatchException("Check sum mismatch.");
 
                 int index = 0;
@@ -56,52 +56,52 @@ namespace SkunkLab.Modbus.Messaging
             }
         }
 
-        new public static ReadCoilsResponse Decode(string message)
+        public static new ReadCoilsResponse Decode(string message)
         {
-            return JsonConvert.DeserializeObject<ReadCoilsResponse>(message);
+            return JsonSerializer.Deserialize<ReadCoilsResponse>(message);
         }
 
         private static BitArray GetValues(int index, byte byteCount, byte[] message)
         {
             byte[] block = new byte[byteCount];
             Buffer.BlockCopy(message, index, block, 0, block.Length);
-            BitArray array = new BitArray(block);
+            BitArray array = new(block);
             return array;
         }
 
 
-        [JsonProperty("messageType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("messageType")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override MessageType Type
         {
             get { return type; }
             set { }
         }
 
-        [JsonProperty("protocol")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("protocol")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public override ProtocolType Protocol { get; set; }
 
-        [JsonProperty("mbapHeader")]
+        [JsonPropertyName("mbapHeader")]
         public override MbapHeader Header { get; set; }
 
-        [JsonProperty("slaveAddress")]
+        [JsonPropertyName("slaveAddress")]
         public override byte SlaveAddress { get; set; }
-        
-        [JsonProperty("function")]
+
+        [JsonPropertyName("function")]
         public override byte FunctionCode { get; set; }
 
-        [JsonProperty("byteCount")]
+        [JsonPropertyName("byteCount")]
         public byte ByteCount { get; set; }
 
-        //[JsonProperty("bitBlock")]
+        //[JsonPropertyName("bitBlock")]
         //public byte[] BitBlock { get; set; }
 
-        [JsonProperty("data")]
+        [JsonPropertyName("data")]
         [JsonConverter(typeof(BitArrayConverter))]
         public BitArray Data { get; set; }
 
-        [JsonProperty("checkSum")]
+        [JsonPropertyName("checkSum")]
         public string CheckSum { get; set; }
 
         public override byte[] Encode()
@@ -111,15 +111,17 @@ namespace SkunkLab.Modbus.Messaging
 
         public override string Serialize()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         public override byte[] ConvertToRtu()
         {
-            List<byte> byteArray = new List<byte>();
-            byteArray.Add(SlaveAddress);
-            byteArray.Add(FunctionCode);
-            byteArray.Add(ByteCount);
+            List<byte> byteArray = new()
+            {
+                SlaveAddress,
+                FunctionCode,
+                ByteCount
+            };
 
 
             byte[] data = new byte[ByteCount];
@@ -142,9 +144,11 @@ namespace SkunkLab.Modbus.Messaging
 
         public override byte[] ConvertToTcp(byte unitId, ushort transactionId, ushort protocolId = 0)
         {
-            List<byte> list = new List<byte>();
-            list.Add(FunctionCode);
-            list.Add(ByteCount);
+            List<byte> list = new()
+            {
+                FunctionCode,
+                ByteCount
+            };
 
             byte[] data = new byte[ByteCount];
             Data.CopyTo(data, 0);
@@ -159,7 +163,7 @@ namespace SkunkLab.Modbus.Messaging
             //    list.Add(item);
             //}
 
-            MbapHeader header = new MbapHeader() { UnitId = unitId, TransactionId = transactionId, ProtocolId = protocolId, Length = (ushort)(list.Count + 1) };
+            MbapHeader header = new() { UnitId = unitId, TransactionId = transactionId, ProtocolId = protocolId, Length = (ushort)(list.Count + 1) };
             byte[] headerBytes = header.Encode();
             byte[] message = new byte[headerBytes.Length + list.Count];
             Buffer.BlockCopy(headerBytes, 0, message, 0, headerBytes.Length);
@@ -169,9 +173,11 @@ namespace SkunkLab.Modbus.Messaging
 
         private byte[] EncodeTcp()
         {
-            List<byte> frames = new List<byte>();
-            frames.Add(FunctionCode);
-            frames.Add(ByteCount);
+            List<byte> frames = new()
+            {
+                FunctionCode,
+                ByteCount
+            };
 
             byte[] data = new byte[ByteCount];
             Data.CopyTo(data, 0);
@@ -196,11 +202,12 @@ namespace SkunkLab.Modbus.Messaging
 
         private byte[] EncodeRtu()
         {
-            List<byte> frames = new List<byte>();
-
-            frames.Add(SlaveAddress);
-            frames.Add(FunctionCode);
-            frames.Add(ByteCount);
+            List<byte> frames = new()
+            {
+                SlaveAddress,
+                FunctionCode,
+                ByteCount
+            };
 
             byte[] data = new byte[ByteCount];
             Data.CopyTo(data, 0);
@@ -232,6 +239,6 @@ namespace SkunkLab.Modbus.Messaging
 
 
 
-        
+
     }
 }
